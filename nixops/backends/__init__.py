@@ -24,6 +24,8 @@ class MachineDefinition(nixops.resources.ResourceDefinition):
             opts = {}
             for (key, xmlType) in (('text',        'string'),
                                    ('keyFile',     'path'),
+                                   ('name',        'string'),
+                                   ('path',        'string'),
                                    ('destDir',     'string'),
                                    ('user',        'string'),
                                    ('group',       'string'),
@@ -215,7 +217,7 @@ class MachineState(nixops.resources.ResourceState):
             return
         if self.store_keys_on_machine: return
         for k, opts in self.get_keys().items():
-            self.log("uploading key ‘{0}’...".format(k))
+            self.log("uploading key ‘{0}’ to ‘{1}’...".format(k,opts['path']))
             tmp = self.depl.tempdir + "/key-" + self.name
             if 'destDir' not in opts:
                 raise Exception("Key '{}' has no 'destDir' specified.".format(k))
@@ -233,10 +235,10 @@ class MachineState(nixops.resources.ResourceState):
             else:
                 raise Exception("Neither 'text' or 'keyFile' options were set for key '{0}'.".format(k))
 
-            outfile = destDir + "/" + k
+            outfile = opts['path']
             # We scp to a temporary file and then mv because scp is not atomic.
             # See https://github.com/NixOS/nixops/issues/762
-            tmp_outfile = destDir + "/." + k + ".tmp"
+            tmp_outfile = destDir + "/." + opts['name'] + ".tmp"
             outfile_esc = "'" + outfile.replace("'", r"'\''") + "'"
             tmp_outfile_esc = "'" + tmp_outfile.replace("'", r"'\''") + "'"
             self.run_command("rm -f " + outfile_esc + " " + tmp_outfile_esc)

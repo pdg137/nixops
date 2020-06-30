@@ -4,6 +4,15 @@ with lib;
 
 let
   keyOptionsType = types.submodule ({ config, name, ... }: {
+    options.name = mkOption {
+      example = "secret.txt";
+      default = name;
+      type = types.str;
+      description = ''
+        The name of the key file.
+      '';
+    };
+
     options.text = mkOption {
       example = "super secret stuff";
       default = null;
@@ -54,7 +63,7 @@ let
 
     options.path = mkOption {
       type = types.path;
-      default = "${config.destDir}/${name}";
+      default = "${config.destDir}/${config.name}";
       internal = true;
       description = ''
         Path to the destination of the file, a shortcut to
@@ -193,7 +202,7 @@ in
                               (name: value: let
                                               # FIXME: The key file should be marked as private once
                                               # https://github.com/NixOS/nix/issues/8 is fixed.
-                                              keyFile = pkgs.writeText name
+                                              keyFile = pkgs.writeText value.name
                                                         (if !isNull value.keyFile
                                                          then builtins.readFile value.keyFile
                                                          else value.text);
@@ -205,7 +214,7 @@ in
                                                      mkdir -p ${destDir} -m 0750
                                                      chown root:keys ${destDir}
                                                  fi
-                                                 ln -sfn ${keyFile} ${destDir}/${name}
+                                                 ln -sfn ${keyFile} ${destDir}/${value.name}
                                             '')
                              config.deployment.keys)
               + ''
@@ -251,7 +260,7 @@ in
           serviceConfig.RestartSec = "100ms";
           path = [ pkgs.inotifyTools ];
           preStart = ''
-            (while read f; do if [ "$f" = "${name}" ]; then break; fi; done \
+            (while read f; do if [ "$f" = "${keyCfg.name}" ]; then break; fi; done \
               < <(inotifywait -qm --format '%f' -e create,move ${keyCfg.destDir}) ) &
 
             if [[ -e "${keyCfg.path}" ]]; then
