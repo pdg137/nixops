@@ -27,7 +27,7 @@ class SSHMaster(object):
         self._askpass_helper = None
         self._control_socket = self._tempdir + "/master-socket"
         self._ssh_target = target
-        pass_prompts = 0 if "-i" in ssh_flags and user is None else 3
+        pass_prompts = 1 if "-i" in ssh_flags and user is None else 3
         kwargs = {}
 
         if passwd is not None:
